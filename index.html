@@ -109,48 +109,48 @@
             myChart.update();
         }
 
-    async function castVote(choice) {
-        setStatus('Submitting vote...');
+async function castVote(choice) {
+    setStatus('Submitting vote...');
 
-        const { error } = await supabaseClient
-            .from('votes')
-            .insert([{ option_name: choice }]);
+    const { error } = await supabaseClient
+        .from('votes')
+        .insert([{ option_name: choice }]);
 
-        if (error) {
-            console.error('Insert error:', error);
-            setStatus('Vote failed: ' + error.message);
-            return;
+    if (error) {
+        console.error('Insert error:', error);
+        setStatus('Vote failed: ' + error.message);
+        return;
     }
 
-    // Update the chart immediately, even if Realtime is not working
-        if (voteCounts[choice] !== undefined) {
-            voteCounts[choice]++;
-            updateChart();
-    }
-
+    await loadVotes();
     setStatus('Vote counted!');
 }
 
-        async function loadInitialVotes() {
-            const { data, error } = await supabaseClient
-                .from('votes')
-                .select('option_name');
+async function loadVotes() {
+    const { data, error } = await supabaseClient
+        .from('votes')
+        .select('option_name');
 
-            if (error) {
-                console.error('Select error:', error);
-                setStatus('Could not load votes: ' + error.message);
-                return false;
-            }
+    if (error) {
+        console.error('Select error:', error);
+        setStatus('Could not load votes: ' + error.message);
+        return false;
+    }
 
-            for (const row of data) {
-                if (voteCounts[row.option_name] !== undefined) {
-                    voteCounts[row.option_name]++;
-                }
-            }
+    // Reset counts before recounting
+    voteCounts.Dogs = 0;
+    voteCounts.Cats = 0;
+    voteCounts.Ferrets = 0;
 
-            updateChart();
-            return true;
+    for (const row of data) {
+        if (voteCounts[row.option_name] !== undefined) {
+            voteCounts[row.option_name]++;
         }
+    }
+
+    updateChart();
+    return true;
+}
 
         function subscribeToLiveVotes() {
             supabaseClient
@@ -173,7 +173,7 @@
 
         async function setup() {
             initChart();
-            const ok = await loadInitialVotes();
+            const ok = await loadVotes();
             if (!ok) return;
 
             subscribeToLiveVotes();
