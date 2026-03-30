@@ -109,21 +109,27 @@
             myChart.update();
         }
 
-        async function castVote(choice) {
-            setStatus('Submitting vote...');
+    async function castVote(choice) {
+        setStatus('Submitting vote...');
 
-            const { error } = await supabaseClient
-                .from('votes')
-                .insert([{ option_name: choice }]);
+        const { error } = await supabaseClient
+            .from('votes')
+            .insert([{ option_name: choice }]);
 
-            if (error) {
-                console.error('Insert error:', error);
-                setStatus('Vote failed: ' + error.message);
-                return;
-            }
+        if (error) {
+            console.error('Insert error:', error);
+            setStatus('Vote failed: ' + error.message);
+            return;
+    }
 
-            setStatus('Vote counted!');
-        }
+    // Update the chart immediately, even if Realtime is not working
+        if (voteCounts[choice] !== undefined) {
+            voteCounts[choice]++;
+            updateChart();
+    }
+
+    setStatus('Vote counted!');
+}
 
         async function loadInitialVotes() {
             const { data, error } = await supabaseClient
